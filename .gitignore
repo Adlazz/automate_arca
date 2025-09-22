@@ -1,0 +1,11 @@
+# Ignorar la carpeta __pycache__
+__pycache__/
+
+# Ignorar el entorno virtual
+venv/
+
+# Ignorar todos los archivos .png
+*.png
+
+# Base de datos SQLite
+*.db
