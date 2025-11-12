@@ -21,13 +21,13 @@ class UsuarioDAO:
             cursor.execute("SELECT * FROM usuarios WHERE LOWER(nombre) LIKE ?", (nombre_parcial,))
             return cursor.fetchall()
 
-    def insertar(self, nombre: str, cuit: str, cuit_retenido: str, password: str) -> None:
+    def insertar(self, nombre: str, cuit: str, cuit_retenido: str, password: str, password_atp: str = None) -> None:
         with self._conectar() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO usuarios (nombre, cuit, cuit_retenido, password)
-                VALUES (?, ?, ?, ?)
-            ''', (nombre, cuit, cuit_retenido, password))
+                INSERT INTO usuarios (nombre, cuit, cuit_retenido, password, password_atp)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (nombre, cuit, cuit_retenido, password, password_atp))
             conn.commit()
 
     def actualizar(self, nombre_usuario: str, campos: dict) -> None:

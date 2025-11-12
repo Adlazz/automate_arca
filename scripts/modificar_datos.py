@@ -6,7 +6,7 @@ dao = UsuarioDAO()
 
 # Modificar los datos de un usuario existente
 dao.actualizar(
-    nombre_usuario="LAZZARINI HECTOR CESAR",
+    nombre_usuario="CEJAS VITO MIGUEL",
     campos={"password": "Ramolaz2025"}
 )
 

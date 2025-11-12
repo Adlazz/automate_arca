@@ -5,10 +5,10 @@ from database.dao.usuario_dao import UsuarioDAO
 dao = UsuarioDAO()
 
 usuarios = [
-    ("PEREDO MONICA ISABEL", "27106230450", "27106230450", "Ramolaz2024"),
+    ("VALLEJO GUSTAVO GERMAN", "20324892649", "20324892649", "Ramolaz2025", "Eliott7526"),
 ]
 
-for nombre, cuit, cuit_retenido, password in usuarios:
-    dao.insertar(nombre, cuit, cuit_retenido, password)
+for nombre, cuit, cuit_retenido, password, password_atp in usuarios:
+    dao.insertar(nombre, cuit, cuit_retenido, password, password_atp)
 
 print("Datos insertados correctamente.")

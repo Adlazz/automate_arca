@@ -3,6 +3,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import random
 import time
@@ -54,6 +55,20 @@ def login_afip(cuit, cuit_retenido, password, fecha_desde, fecha_hasta, nombre):
         time.sleep(5)
         driver.switch_to.window(driver.window_handles[-1])
         print("Cambiado a la nueva pestaña")
+
+        # Esperar a que la nueva página cargue completamente
+        wait.until(lambda d: d.execute_script('return document.readyState') == 'complete')
+        time.sleep(3)  # Tiempo adicional para elementos dinámicos
+
+        # Buscar el botón "click aquí" por clase (más confiable que ID dinámico)
+        print("Buscando botón 'click aquí'...")
+        elemento_boton = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button.btn-tertiary.btn-sm")))
+        driver.execute_script("arguments[0].scrollIntoView(true);", elemento_boton)
+        time.sleep(1)
+        driver.execute_script("arguments[0].click();", elemento_boton)
+        print("✔️ Click exitoso en botón 'click aquí'")
+
+        time.sleep(2)
 
         seleccionar_dropdown_por_valor(driver, wait, By.ID, "cuitRetenido", cuit_retenido, "CUIT Retenido")
         seleccionar_dropdown_por_valor(driver, wait, By.ID, "impuestos", "767", "Impuesto SICORE")

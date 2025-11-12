@@ -59,6 +59,19 @@ def ejecutar_consulta_retenciones(usuario, fecha_desde, fecha_hasta):
     except Exception as e:
         print(f"❌ Error al ejecutar consulta de retenciones: {e}")
 
+def ejecutar_ddjj_atp(usuario, periodo, base_imponible):
+    """Ejecuta la automatización de DDJJ ATP (Rentas Formosa)."""
+    try:
+        from automatizaciones.ddjj_atp import login_afip
+        nombre = usuario[1]
+        cuit = usuario[2]
+        password_atp = usuario[5] if len(usuario) > 5 and usuario[5] else usuario[4]
+        login_afip(cuit, password_atp, periodo, base_imponible, nombre)
+    except ImportError as e:
+        print(f"❌ Error al importar el módulo ddjj_atp: {e}")
+    except Exception as e:
+        print(f"❌ Error al ejecutar DDJJ ATP: {e}")
+
 def main():
     """Función principal del menú."""
     print("🧾 Automatización ARCA - Menú Principal")
@@ -70,13 +83,24 @@ def main():
 
     print(f"\n✅ Usuario seleccionado: {usuario[1]} - {usuario[2]}")
     print("\nSeleccione la acción a realizar:")
-    print("1. Presentar Libro IVA")
-    print("2. Consultar Retenciones")
+    print("1. Consultar Retenciones")
+    print("2. Presentar Libro IVA")
+    print("3. Presentar DDJJ ATP")
     print("0. Salir")
-    
-    opcion = input("\nIngrese opción (0, 1 o 2): ").strip()
+
+    opcion = input("\nIngrese opción (0, 1, 2 o 3): ").strip()
 
     if opcion == "1":
+        fecha_desde = input("Ingrese Fecha Desde (DDMMYYYY): ")
+        fecha_hasta = input("Ingrese Fecha Hasta (DDMMYYYY): ")
+        
+        if not validar_fecha(fecha_desde) or not validar_fecha(fecha_hasta):
+            print("❌ Formato de fecha inválido. Use DDMMYYYY")
+            return
+            
+        ejecutar_consulta_retenciones(usuario, fecha_desde, fecha_hasta)
+
+    elif opcion == "2":
         periodo = input("Ingrese el período fiscal (formato MM/YYYY): ")
         if not validar_periodo(periodo):
             print("❌ Formato de período inválido. Use MM/YYYY")
@@ -90,19 +114,22 @@ def main():
         tipo_operacion = "ninguna" if tipo == "N" else "exentas"
         ejecutar_portal_iva(usuario, periodo, tipo_operacion)
 
-    elif opcion == "2":
-        fecha_desde = input("Ingrese Fecha Desde (DDMMYYYY): ")
-        fecha_hasta = input("Ingrese Fecha Hasta (DDMMYYYY): ")
-        
-        if not validar_fecha(fecha_desde) or not validar_fecha(fecha_hasta):
-            print("❌ Formato de fecha inválido. Use DDMMYYYY")
+    elif opcion == "3":
+        periodo = input("Ingrese el período fiscal (formato MM/YYYY): ")
+        if not validar_periodo(periodo):
+            print("❌ Formato de período inválido. Use MM/YYYY")
             return
-            
-        ejecutar_consulta_retenciones(usuario, fecha_desde, fecha_hasta)
+
+        base_imponible = input("Ingrese la Base Imponible (use punto como separador decimal, ej: 999.99): ")
+        if not validar_base_imponible(base_imponible):
+            print("❌ Formato de Base Imponible inválido. Use solo números y punto decimal.")
+            return
+
+        ejecutar_ddjj_atp(usuario, periodo, base_imponible)
 
     elif opcion == "0":
         print("👋 ¡Hasta luego!")
-        
+
     else:
         print("❌ Opción inválida.")
 
@@ -117,6 +144,14 @@ def validar_periodo(periodo):
 def validar_fecha(fecha):
     """Valida el formato de fecha DDMMYYYY."""
     return len(fecha) == 8 and fecha.isdigit()
+
+def validar_base_imponible(base):
+    """Valida el formato de base imponible (números y punto decimal)."""
+    try:
+        float(base.replace(',', '.'))
+        return True
+    except:
+        return False
 
 if __name__ == "__main__":
     try:
