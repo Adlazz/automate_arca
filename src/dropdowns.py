@@ -14,7 +14,7 @@ def seleccionar_dropdown_por_valor(driver, wait, by, selector, valor, descripcio
     try:
         dropdown = wait.until(EC.presence_of_element_located((by, selector)))
         Select(dropdown).select_by_value(valor)
-        print(f"✔️ Opción '{valor}' seleccionada en {descripcion}")
+        print(f"[OK] Opción '{valor}' seleccionada en {descripcion}")
     except Exception as e:
-        print(f"❌ No se pudo seleccionar '{valor}' en {descripcion}: {e}")
+        print(f"[X] No se pudo seleccionar '{valor}' en {descripcion}: {e}")
         driver.save_screenshot(f"error_dropdown_{descripcion}.png")

@@ -27,7 +27,9 @@ def login_afip(cuit, cuit_retenido, password, fecha_desde, fecha_hasta, nombre):
     user_agent = get_random_user_agent()
     options.add_argument(f'user-agent={user_agent}')
     options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    options.add_argument('--disable-logging')
+    options.add_argument('--log-level=3')
+    options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging'])
     options.add_experimental_option('useAutomationExtension', False)
 
     service = Service(ChromeDriverManager().install())
@@ -66,7 +68,7 @@ def login_afip(cuit, cuit_retenido, password, fecha_desde, fecha_hasta, nombre):
         driver.execute_script("arguments[0].scrollIntoView(true);", elemento_boton)
         time.sleep(1)
         driver.execute_script("arguments[0].click();", elemento_boton)
-        print("✔️ Click exitoso en botón 'click aquí'")
+        print("[OK] Click exitoso en botón 'click aquí'")
 
         time.sleep(2)
 
@@ -85,7 +87,7 @@ def login_afip(cuit, cuit_retenido, password, fecha_desde, fecha_hasta, nombre):
         os.makedirs(ruta_destino, exist_ok=True)
         screenshot_path = os.path.join(ruta_destino, f"retenciones_{fecha_desde}_{fecha_hasta}_{cuit_retenido}.png")
         driver.save_screenshot(screenshot_path)
-        print(f"✔️ Captura guardada: {screenshot_path}")
+        print(f"[OK] Captura guardada: {screenshot_path}")
 
         print("Mantén la sesión abierta, presiona 'Esc' para cerrar.")
         while True:
@@ -95,7 +97,7 @@ def login_afip(cuit, cuit_retenido, password, fecha_desde, fecha_hasta, nombre):
 
     except Exception as e:
         driver.save_screenshot(f"afip_login_error_{cuit}.png")
-        print(f"❌ Error durante el login: {e}")
+        print(f"[X] Error durante el login: {e}")
     finally:
         driver.quit()
-        print("✔️ Sesión cerrada")
+        print("[OK] Sesión cerrada")

@@ -32,7 +32,9 @@ def login_afip(cuit, password, periodo_fiscal, tipo_operacion, nombre_usuario):
     user_agent = get_random_user_agent()
     options.add_argument(f'user-agent={user_agent}')
     options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    options.add_argument('--disable-logging')
+    options.add_argument('--log-level=3')
+    options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging'])
     options.add_experimental_option('useAutomationExtension', False)
 
     service = Service(ChromeDriverManager().install())

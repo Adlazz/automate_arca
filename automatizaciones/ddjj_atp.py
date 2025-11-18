@@ -31,7 +31,9 @@ def login_afip(cuit, password, periodo_fiscal, base_imponible, nombre_usuario):
     user_agent = get_random_user_agent()
     options.add_argument(f'user-agent={user_agent}')
     options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    options.add_argument('--disable-logging')
+    options.add_argument('--log-level=3')
+    options.add_experimental_option('excludeSwitches', ['enable-automation', 'enable-logging'])
     options.add_experimental_option('useAutomationExtension', False)
 
     service = Service(ChromeDriverManager().install())
@@ -65,9 +67,9 @@ def login_afip(cuit, password, periodo_fiscal, base_imponible, nombre_usuario):
         try:
             elemento = driver.find_element(By.CSS_SELECTOR, "a[href='iibb_ddjj.php']")
             driver.execute_script("arguments[0].click();", elemento)
-            print("✔️ Click en INGRESOS BRUTOS - REGIMEN GENERAL")
+            print("[OK] Click en INGRESOS BRUTOS - REGIMEN GENERAL")
         except Exception as e:
-            print(f"❌ Error al hacer click en INGRESOS BRUTOS: {e}")
+            print(f"[X] Error al hacer click en INGRESOS BRUTOS: {e}")
 
         time.sleep(3)
 
@@ -102,9 +104,9 @@ def login_afip(cuit, password, periodo_fiscal, base_imponible, nombre_usuario):
         # Verificar mensaje de éxito
         mensaje_exito = esperar_elemento(driver, wait, By.CSS_SELECTOR, "div.alert-verde-20", "mensaje de éxito")
         if mensaje_exito and "LOS DATOS SE CARGARON CORRECTAMENTE" in mensaje_exito.text:
-            print("✔️ Datos cargados correctamente")
+            print("[OK] Datos cargados correctamente")
         else:
-            print("⚠️ No se pudo verificar el mensaje de éxito")
+            print("[!] No se pudo verificar el mensaje de éxito")
 
         # Click "Deducciones"
         click_elemento(driver, wait, By.CSS_SELECTOR, "a[href='/consultas/iibb_ddjj.php?caseid=deducciones_lista']", "Deducciones")
@@ -130,14 +132,14 @@ def login_afip(cuit, password, periodo_fiscal, base_imponible, nombre_usuario):
         try:
             elemento = driver.find_element(By.CSS_SELECTOR, "a[href='iibb_ddjj.php?caseid=ddjj_carga']")
             driver.execute_script("arguments[0].click();", elemento)
-            print("✔️ Click en Presentación DJ Mensual")
+            print("[OK] Click en Presentación DJ Mensual")
         except Exception as e:
-            print(f"❌ Error al hacer click en Presentación DJ Mensual: {e}")
+            print(f"[X] Error al hacer click en Presentación DJ Mensual: {e}")
 
-        time.sleep(2)        
+        time.sleep(2)
 
         # Mantener navegador abierto para inspección manual
-        print("\n⏸️  Navegador abierto para inspección manual")
+        print("\n[PAUSE] Navegador abierto para inspección manual")
         print("Presione ENTER para cerrar el navegador y continuar...")
         input()
 

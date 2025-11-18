@@ -9,3 +9,8 @@ venv/
 
 # Base de datos SQLite
 *.db
+
+# PyInstaller
+build/
+dist/
+*.spec

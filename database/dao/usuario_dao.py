@@ -1,9 +1,21 @@
 import sqlite3
+import sys
+import os
 from typing import List, Tuple, Optional
 
 class UsuarioDAO:
-    def __init__(self, db_path: str = 'database/usuarios.db'):
-        self.db_path = db_path
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            # Detectar si está corriendo como .exe empaquetado
+            if getattr(sys, 'frozen', False):
+                # Corriendo como .exe
+                base_path = sys._MEIPASS
+            else:
+                # Corriendo como script normal
+                base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            self.db_path = os.path.join(base_path, 'database', 'usuarios.db')
+        else:
+            self.db_path = db_path
 
     def _conectar(self):
         return sqlite3.connect(self.db_path)
