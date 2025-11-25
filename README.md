@@ -41,10 +41,10 @@ pip install -r requirements.txt
 
 La forma más sencilla de usar el programa es a través del ejecutable pre-compilado:
 
-1. Descarga `main.exe` de la carpeta `dist/`
+1. Descarga `auto_arca.exe` de la carpeta `dist/`
 2. Ejecuta el archivo:
-   - Doble clic en `main.exe` o
-   - Desde la terminal: `main.exe`
+   - Doble clic en `auto_arca.exe` o
+   - Desde la terminal: `auto_arca.exe`
 
 ### Opción 2: Ejecutar desde Python
 
