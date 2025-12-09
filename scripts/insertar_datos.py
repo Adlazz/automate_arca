@@ -5,7 +5,7 @@ from database.dao.usuario_dao import UsuarioDAO
 dao = UsuarioDAO()
 
 usuarios = [
-    ("VALLEJO GUSTAVO GERMAN", "20324892649", "20324892649", "Ramolaz2025", "Eliott7526"),
+    ("GIMENEZ NATALIA KARINA", "23224869754", "30711019509", "Estudio2025", "Eliott7526"),
 ]
 
 for nombre, cuit, cuit_retenido, password, password_atp in usuarios:

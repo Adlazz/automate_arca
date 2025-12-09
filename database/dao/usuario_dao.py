@@ -8,11 +8,11 @@ class UsuarioDAO:
         if db_path is None:
             # Detectar si está corriendo como .exe empaquetado
             if getattr(sys, 'frozen', False):
-                # Corriendo como .exe
-                base_path = sys._MEIPASS
+                # Corriendo como .exe - usar ruta junto al ejecutable
+                base_path = os.path.dirname(sys.executable)
             else:
                 # Corriendo como script normal
-                base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             self.db_path = os.path.join(base_path, 'database', 'usuarios.db')
         else:
             self.db_path = db_path
