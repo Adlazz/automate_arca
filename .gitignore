@@ -3,14 +3,44 @@ __pycache__/
 
 # Ignorar el entorno virtual
 venv/
+.venv/
 
 # Ignorar todos los archivos .png
 *.png
 
-# Base de datos SQLite
+# Base de datos SQLite (contiene contraseñas y datos sensibles)
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
+database/usuarios.db
+
+# Archivos de configuración con credenciales
+.env
+.env.local
+config.ini
+credentials.json
+
+# Logs que pueden contener información sensible
+*.log
+logs/
 
 # PyInstaller
 build/
 dist/
 *.spec
+
+# Archivos temporales y de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+

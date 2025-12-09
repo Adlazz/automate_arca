@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     nombre TEXT NOT NULL,
     cuit TEXT NOT NULL,
     cuit_retenido TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    password_atp TEXT
 )
 ''')
 

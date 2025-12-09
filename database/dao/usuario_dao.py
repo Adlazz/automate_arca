@@ -64,3 +64,11 @@ class UsuarioDAO:
                 )
             ''')
             conn.commit()
+
+    def eliminar(self, nombre_usuario: str) -> bool:
+        """Elimina un usuario por nombre. Retorna True si se eliminó, False si no existía."""
+        with self._conectar() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM usuarios WHERE nombre = ?", (nombre_usuario,))
+            conn.commit()
+            return cursor.rowcount > 0
