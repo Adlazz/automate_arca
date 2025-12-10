@@ -71,10 +71,37 @@ Si necesitas generar el .exe desde el código fuente:
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --add-data "database;database" --add-data "automatizaciones;automatizaciones" --add-data "scripts;scripts" --hidden-import=selenium --hidden-import=webdriver_manager main.py
+pyinstaller main.spec --clean
 ```
 
-El ejecutable se generará en la carpeta `dist/`.
+El ejecutable se generará en la carpeta `dist/main.exe`.
+
+### Compartir el ejecutable
+
+El archivo `main.exe` es **semi-portable** y puede compartirse directamente (por mail, USB, etc.).
+
+**Requisitos en la PC de destino:**
+- ✅ Google Chrome instalado
+- ✅ Conexión a internet (solo la primera vez para descargar ChromeDriver automáticamente)
+- ❌ NO necesita Python ni dependencias instaladas
+
+**Instrucciones para compartir:**
+
+Cuando compartas el .exe, incluye estas instrucciones para el usuario final:
+
+```
+REQUISITOS:
+1. Tener Google Chrome instalado en tu PC
+2. Conexión a internet (solo la primera vez)
+
+INSTRUCCIONES:
+1. Descarga el archivo main.exe
+2. Haz doble clic en main.exe desde el Explorador de Windows
+3. La primera vez descargará ChromeDriver automáticamente
+4. ¡Listo! Ya puedes usar el programa
+
+NOTA: Cada PC tendrá su propia base de datos de usuarios local.
+```
 
 ## Estructura del Proyecto
 

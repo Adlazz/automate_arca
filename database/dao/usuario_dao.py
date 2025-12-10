@@ -8,8 +8,8 @@ class UsuarioDAO:
         if db_path is None:
             # Detectar si está corriendo como .exe empaquetado
             if getattr(sys, 'frozen', False):
-                # Corriendo como .exe - usar ruta junto al ejecutable
-                base_path = os.path.dirname(sys.executable)
+                # Corriendo como .exe - PyInstaller crea carpeta temporal
+                base_path = sys._MEIPASS
             else:
                 # Corriendo como script normal
                 base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
