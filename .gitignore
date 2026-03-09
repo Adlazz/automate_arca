@@ -14,6 +14,7 @@ venv/
 *.db-wal
 *.db-shm
 database/usuarios.db
+database/usuarios.db.backup_*
 
 # Archivos de configuración con credenciales
 .env
