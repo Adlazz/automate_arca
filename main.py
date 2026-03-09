@@ -72,6 +72,17 @@ def ejecutar_ddjj_atp(usuario, periodo, base_imponible):
     except Exception as e:
         print(f"[X] Error al ejecutar DDJJ ATP: {e}")
 
+def ejecutar_importar_retenciones_as(usuario):
+    """Ejecuta el procesamiento de retenciones para Account Soft."""
+    try:
+        from automatizaciones.importar_retenciones_as import procesar_retenciones
+        nombre = usuario[1]
+        procesar_retenciones(nombre)
+    except ImportError as e:
+        print(f"[X] Error al importar el módulo importar_retenciones_as: {e}")
+    except Exception as e:
+        print(f"[X] Error al procesar retenciones: {e}")
+
 def menu_automatizaciones():
     """Menú de automatizaciones (operaciones AFIP)."""
     usuario = seleccionar_usuario()
@@ -81,11 +92,12 @@ def menu_automatizaciones():
     print(f"\n[OK] Usuario seleccionado: {usuario[1]} - {usuario[2]}")
     print("\nSeleccione la acción a realizar:")
     print("1. Consultar Retenciones")
-    print("2. Presentar Libro IVA")
-    print("3. Presentar DDJJ ATP")
+    print("2. Importar Retenciones a AS")
+    print("3. Presentar Libro IVA")
+    print("4. Presentar DDJJ ATP")
     print("0. Volver al menú principal")
 
-    opcion = input("\nIngrese opción (0, 1, 2 o 3): ").strip()
+    opcion = input("\nIngrese opción (0, 1, 2, 3 o 4): ").strip()
 
     if opcion == "1":
         fecha_desde = input("Ingrese Fecha Desde (DDMMYYYY): ")
@@ -98,6 +110,9 @@ def menu_automatizaciones():
         ejecutar_consulta_retenciones(usuario, fecha_desde, fecha_hasta)
 
     elif opcion == "2":
+        ejecutar_importar_retenciones_as(usuario)
+
+    elif opcion == "3":
         periodo = input("Ingrese el período fiscal (formato MM/YYYY): ")
         if not validar_periodo(periodo):
             print("[X] Formato de período inválido. Use MM/YYYY")
@@ -111,7 +126,7 @@ def menu_automatizaciones():
         tipo_operacion = "ninguna" if tipo == "N" else "exentas"
         ejecutar_portal_iva(usuario, periodo, tipo_operacion)
 
-    elif opcion == "3":
+    elif opcion == "4":
         periodo = input("Ingrese el período fiscal (formato MM/YYYY): ")
         if not validar_periodo(periodo):
             print("[X] Formato de período inválido. Use MM/YYYY")
@@ -193,7 +208,31 @@ def consultar_usuarios():
 def modificar_usuario():
     """Modifica datos de un usuario existente."""
     print("\n--- Modificar Usuario ---")
-    nombre = input("Nombre del usuario a modificar: ").strip().upper()
+    nombre_parcial = input("Ingrese parte del nombre del usuario a modificar: ").strip().lower()
+    coincidencias = dao.buscar_por_nombre(nombre_parcial)
+
+    if not coincidencias:
+        print("[X] No se encontraron coincidencias.")
+        return
+
+    print("\n- Usuarios encontrados:")
+    for i, u in enumerate(coincidencias):
+        print(f"{i + 1}. {u[1]} - CUIT: {u[2]}")
+
+    try:
+        seleccion = int(input("\nSeleccione el número del usuario a modificar (0 para cancelar): ")) - 1
+        if seleccion == -1:
+            print("[X] Operación cancelada.")
+            return
+        if 0 <= seleccion < len(coincidencias):
+            usuario = coincidencias[seleccion]
+            nombre_completo = usuario[1]
+        else:
+            print("[X] Selección inválida.")
+            return
+    except ValueError:
+        print("[X] Por favor ingrese un número válido.")
+        return
 
     print("\n¿Qué desea modificar?")
     print("1. Password AFIP")
@@ -221,7 +260,7 @@ def modificar_usuario():
         return
 
     try:
-        dao.actualizar(nombre, campos)
+        dao.actualizar(nombre_completo, campos)
         print("[OK] Usuario actualizado correctamente.")
     except Exception as e:
         print(f"[X] Error al actualizar usuario: {e}")
@@ -229,11 +268,36 @@ def modificar_usuario():
 def actualizar_cuit_usuario():
     """Actualiza el CUIT de un usuario."""
     print("\n--- Actualizar CUIT ---")
-    nombre = input("Nombre del usuario: ").strip().upper()
+    nombre_parcial = input("Ingrese parte del nombre del usuario: ").strip().lower()
+    coincidencias = dao.buscar_por_nombre(nombre_parcial)
+
+    if not coincidencias:
+        print("[X] No se encontraron coincidencias.")
+        return
+
+    print("\n- Usuarios encontrados:")
+    for i, u in enumerate(coincidencias):
+        print(f"{i + 1}. {u[1]} - CUIT: {u[2]}")
+
+    try:
+        seleccion = int(input("\nSeleccione el número del usuario a modificar (0 para cancelar): ")) - 1
+        if seleccion == -1:
+            print("[X] Operación cancelada.")
+            return
+        if 0 <= seleccion < len(coincidencias):
+            usuario = coincidencias[seleccion]
+            nombre_completo = usuario[1]
+        else:
+            print("[X] Selección inválida.")
+            return
+    except ValueError:
+        print("[X] Por favor ingrese un número válido.")
+        return
+
     nuevo_cuit = input("Nuevo CUIT: ").strip()
 
     try:
-        dao.actualizar(nombre, {"cuit": nuevo_cuit})
+        dao.actualizar(nombre_completo, {"cuit": nuevo_cuit})
         print("[OK] CUIT actualizado correctamente.")
     except Exception as e:
         print(f"[X] Error al actualizar CUIT: {e}")
