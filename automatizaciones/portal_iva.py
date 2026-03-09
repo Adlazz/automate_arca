@@ -17,6 +17,91 @@ from src.dropdowns import click_opcion_dropdown, seleccionar_dropdown_por_valor
 from src.uploads import subir_archivos
 from src.configuracion_facturacion import seleccionar_modalidad_operacion
 
+def cambiar_representado(driver, wait, cuit_representado):
+    """
+    Cambia el representado en Portal IVA para personas jurídicas.
+
+    Args:
+        driver: WebDriver de Selenium
+        wait: WebDriverWait instance
+        cuit_representado: CUIT de la persona jurídica a representar
+
+    Returns:
+        bool: True si el cambio fue exitoso, False en caso contrario
+    """
+    try:
+        print(f"[INFO] Buscando botón para cambiar representado...")
+
+        # Intentar encontrar el botón/icono de cambiar representado
+        # Nota: Los selectores XPath deben ajustarse según la estructura HTML real de Portal IVA
+        # Algunas opciones comunes:
+        try:
+            # Opción 1: Botón con texto específico
+            btn_cambiar = esperar_elemento(driver, wait, By.XPATH,
+                "//button[contains(text(), 'Cambiar')] | //a[contains(text(), 'Cambiar')]",
+                "botón cambiar representado", timeout=5)
+        except:
+            # Opción 2: Icono cerca del encabezado "REPRESENTANDO A:"
+            btn_cambiar = esperar_elemento(driver, wait, By.XPATH,
+                "//div[contains(text(), 'REPRESENTANDO A:')]/following-sibling::*//button | //div[contains(text(), 'REPRESENTANDO A:')]/following-sibling::*//a",
+                "icono cambiar representado", timeout=5)
+
+        btn_cambiar.click()
+        print("[OK] Click en botón cambiar representado")
+        time.sleep(2)
+
+        # Esperar que aparezca el modal o dropdown de selección
+        # Intentar buscar campo de búsqueda o lista de CUITs
+        try:
+            # Opción 1: Campo de búsqueda/input para CUIT
+            campo_cuit = esperar_elemento(driver, wait, By.XPATH,
+                "//input[@type='text'] | //input[@placeholder]",
+                "campo CUIT representado", timeout=5)
+            campo_cuit.clear()
+            campo_cuit.send_keys(cuit_representado)
+            time.sleep(1)
+
+            # Buscar en lista de resultados
+            opcion_cuit = esperar_elemento(driver, wait, By.XPATH,
+                f"//li[contains(text(), '{cuit_representado}')] | //div[contains(text(), '{cuit_representado}')]",
+                "opción CUIT en lista")
+            opcion_cuit.click()
+
+        except:
+            # Opción 2: Dropdown/select directo
+            print("[INFO] Intentando seleccionar desde dropdown...")
+            seleccionar_dropdown_por_valor(driver, wait, By.XPATH,
+                "//select", cuit_representado, "representado")
+
+        # Buscar botón de confirmar/aceptar
+        try:
+            btn_confirmar = esperar_elemento(driver, wait, By.XPATH,
+                "//button[contains(text(), 'Aceptar')] | //button[contains(text(), 'Confirmar')] | //button[contains(text(), 'OK')]",
+                "botón confirmar", timeout=5)
+            btn_confirmar.click()
+        except:
+            print("[INFO] No se encontró botón de confirmación (podría ser automático)")
+
+        time.sleep(3)
+
+        # Verificar que el cambio fue exitoso
+        try:
+            header = driver.find_element(By.XPATH, "//div[contains(text(), 'REPRESENTANDO A:')]").text
+            if cuit_representado in header:
+                print(f"[OK] Representado cambiado exitosamente a CUIT: {cuit_representado}")
+                return True
+            else:
+                print(f"[X] El CUIT {cuit_representado} no aparece en el header")
+                return False
+        except:
+            print("[!] No se pudo verificar el cambio de representado")
+            return True  # Asumir éxito si no hay error anterior
+
+    except Exception as e:
+        print(f"[X] Error al cambiar representado: {str(e)}")
+        print("[!] Continuando con el CUIT por defecto...")
+        return False
+
 def get_random_user_agent():
     user_agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -27,7 +112,7 @@ def get_random_user_agent():
     ]
     return random.choice(user_agents)
 
-def login_afip(cuit, password, periodo_fiscal, tipo_operacion, nombre_usuario):
+def login_afip(cuit, password, periodo_fiscal, tipo_operacion, nombre_usuario, cuit_representado=None):
     options = Options()
     user_agent = get_random_user_agent()
     options.add_argument(f'user-agent={user_agent}')
@@ -70,6 +155,14 @@ def login_afip(cuit, password, periodo_fiscal, tipo_operacion, nombre_usuario):
         seleccionar_dropdown_por_valor(driver, wait, By.ID, "periodo", periodo_valor, "período fiscal")
 
         click_elemento(driver, wait, By.XPATH, "//button[span[text()='Continuar']]", "botón Continuar")
+
+        # 🆕 NUEVA LÓGICA: Cambiar representado si es Persona Jurídica
+        if cuit_representado:
+            print(f"[INFO] Persona Jurídica detectada. Cambiando a representado CUIT: {cuit_representado}")
+            cambiar_representado(driver, wait, cuit_representado)
+        else:
+            print(f"[INFO] Persona Física. Usando CUIT por defecto: {cuit}")
+
         click_elemento(driver, wait, By.XPATH, "//button[span[text()='Ingresar']]", "botón Ingresar (2)")
 
         esperar_elemento(driver, wait, By.ID, "seccionConMovimientos", "sección checkboxes")

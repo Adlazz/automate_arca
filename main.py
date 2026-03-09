@@ -41,8 +41,14 @@ def ejecutar_portal_iva(usuario, periodo, tipo_operacion):
         from automatizaciones.portal_iva import login_afip
         nombre = usuario[1]
         cuit = usuario[2]
-        password = usuario[4]
-        login_afip(cuit, password, periodo, tipo_operacion, nombre)
+        cuit_representante = usuario[3] if len(usuario) > 3 and usuario[3] else None
+        password = usuario[5]
+
+        # Determinar CUIT para login y CUIT representado
+        cuit_login = cuit_representante if cuit_representante else cuit
+        cuit_representado = cuit if cuit_representante else None
+
+        login_afip(cuit_login, password, periodo, tipo_operacion, nombre, cuit_representado)
     except ImportError as e:
         print(f"[X] Error al importar el módulo portal_iva: {e}")
     except Exception as e:
@@ -52,8 +58,16 @@ def ejecutar_consulta_retenciones(usuario, fecha_desde, fecha_hasta):
     """Ejecuta la automatización de consulta de retenciones."""
     try:
         from automatizaciones.consultar_retenciones import login_afip
-        nombre, cuit, cuit_retenido, password = usuario[1], usuario[2], usuario[3], usuario[4]
-        login_afip(cuit, cuit_retenido, password, fecha_desde, fecha_hasta, nombre)
+        nombre = usuario[1]
+        cuit = usuario[2]
+        cuit_representante = usuario[3] if len(usuario) > 3 and usuario[3] else None
+        password = usuario[5]
+
+        # Determinar CUIT para login y CUIT retenido
+        cuit_login = cuit_representante if cuit_representante else cuit
+        cuit_retenido = cuit  # Siempre el CUIT del contribuyente principal
+
+        login_afip(cuit_login, cuit_retenido, password, fecha_desde, fecha_hasta, nombre)
     except ImportError as e:
         print(f"[X] Error al importar el módulo consultar_retenciones: {e}")
     except Exception as e:
@@ -65,8 +79,14 @@ def ejecutar_ddjj_atp(usuario, periodo, base_imponible):
         from automatizaciones.ddjj_atp import login_afip
         nombre = usuario[1]
         cuit = usuario[2]
-        password_atp = usuario[5] if len(usuario) > 5 and usuario[5] else usuario[4]
-        login_afip(cuit, password_atp, periodo, base_imponible, nombre)
+        cuit_representante = usuario[3] if len(usuario) > 3 and usuario[3] else None
+        password = usuario[5]
+        password_atp = usuario[6] if len(usuario) > 6 and usuario[6] else password
+
+        # Determinar CUIT para login
+        cuit_login = cuit_representante if cuit_representante else cuit
+
+        login_afip(cuit_login, password_atp, periodo, base_imponible, nombre)
     except ImportError as e:
         print(f"[X] Error al importar el módulo ddjj_atp: {e}")
     except Exception as e:
@@ -161,22 +181,49 @@ def menu_gestion_bd():
 def insertar_usuario():
     """Inserta un nuevo usuario en la base de datos."""
     print("\n--- Insertar Nuevo Usuario ---")
-    nombre = input("Nombre completo: ").strip().upper()
-    cuit = input("CUIT: ").strip()
-    cuit_retenido = input("CUIT Retenido: ").strip()
-    password = input("Password AFIP: ").strip()
-    password_atp = input("Password ATP (presione Enter si es igual a AFIP): ").strip()
+    print("\n¿Es una Persona Jurídica (PJ) o Física (PF)?")
+    tipo = input("Ingrese [J] para Jurídica o [F] para Física: ").strip().upper()
 
-    if not password_atp:
-        password_atp = None
+    if tipo == "J":
+        # Persona Jurídica
+        nombre = input("Nombre de la Persona Jurídica (ej: LAZZARINI & LAZZARINI SRL): ").strip().upper()
+        cuit = input("CUIT de la Persona Jurídica: ").strip()
+        nombre_representante = input("Nombre del Representante Legal: ").strip().upper()
+        cuit_representante = input("CUIT del Representante (para login ARCA): ").strip()
+        password = input("Password AFIP: ").strip()
+        password_atp = input("Password ATP (presione Enter si es igual a AFIP): ").strip()
 
-    try:
-        dao.insertar(nombre, cuit, cuit_retenido, password, password_atp)
-        print("[OK] Usuario insertado correctamente.")
-    except sqlite3.IntegrityError:
-        print("[X] Error: Ya existe un usuario con ese CUIT retenido.")
-    except Exception as e:
-        print(f"[X] Error al insertar usuario: {e}")
+        if not password_atp:
+            password_atp = None
+
+        try:
+            dao.insertar(nombre, cuit, password, password_atp, cuit_representante, nombre_representante)
+            print("[OK] Persona Jurídica insertada correctamente.")
+        except sqlite3.IntegrityError:
+            print("[X] Error: Ya existe un usuario con ese CUIT.")
+        except Exception as e:
+            print(f"[X] Error al insertar usuario: {e}")
+
+    elif tipo == "F":
+        # Persona Física
+        nombre = input("Nombre completo de la Persona Física: ").strip().upper()
+        cuit = input("CUIT: ").strip()
+        password = input("Password AFIP: ").strip()
+        password_atp = input("Password ATP (presione Enter si es igual a AFIP): ").strip()
+
+        if not password_atp:
+            password_atp = None
+
+        try:
+            dao.insertar(nombre, cuit, password, password_atp)
+            print("[OK] Persona Física insertada correctamente.")
+        except sqlite3.IntegrityError:
+            print("[X] Error: Ya existe un usuario con ese CUIT.")
+        except Exception as e:
+            print(f"[X] Error al insertar usuario: {e}")
+
+    else:
+        print("[X] Opción inválida. Use J o F.")
 
 def consultar_usuarios():
     """Consulta y muestra todos los usuarios."""
@@ -187,8 +234,19 @@ def consultar_usuarios():
         return
 
     for u in usuarios:
-        password_atp_display = u[5] if len(u) > 5 and u[5] else "(igual a AFIP)"
-        print(f"ID: {u[0]} | Nombre: {u[1]} | CUIT: {u[2]} | CUIT Ret: {u[3]} | Pass ATP: {password_atp_display}")
+        # Nueva estructura: id, nombre, cuit, cuit_representante, nombre_representante, password, password_atp
+        tipo = "PJ" if u[3] else "PF"  # Si tiene cuit_representante, es PJ
+        password_atp_display = u[6] if len(u) > 6 and u[6] else "(igual a AFIP)"
+
+        print(f"\nID: {u[0]} | Tipo: {tipo}")
+        print(f"  Nombre: {u[1]}")
+        print(f"  CUIT: {u[2]}")
+
+        if u[3]:  # Si es Persona Jurídica
+            print(f"  Representante: {u[4] or '(no especificado)'}")
+            print(f"  CUIT Representante: {u[3]}")
+
+        print(f"  Password ATP: {password_atp_display}")
 
 def modificar_usuario():
     """Modifica datos de un usuario existente."""
@@ -198,8 +256,10 @@ def modificar_usuario():
     print("\n¿Qué desea modificar?")
     print("1. Password AFIP")
     print("2. Password ATP")
-    print("3. CUIT Retenido")
-    print("4. Todos los campos")
+    print("3. CUIT del Contribuyente")
+    print("4. CUIT del Representante")
+    print("5. Nombre del Representante")
+    print("6. Todos los campos")
 
     opcion = input("\nIngrese opción: ").strip()
     campos = {}
@@ -210,12 +270,22 @@ def modificar_usuario():
         password_atp = input("Nuevo password ATP: ").strip()
         campos["password_atp"] = password_atp if password_atp else None
     elif opcion == "3":
-        campos["cuit_retenido"] = input("Nuevo CUIT Retenido: ").strip()
+        campos["cuit"] = input("Nuevo CUIT del Contribuyente: ").strip()
     elif opcion == "4":
+        cuit_rep = input("Nuevo CUIT del Representante (Enter para eliminar): ").strip()
+        campos["cuit_representante"] = cuit_rep if cuit_rep else None
+    elif opcion == "5":
+        nombre_rep = input("Nuevo Nombre del Representante (Enter para eliminar): ").strip()
+        campos["nombre_representante"] = nombre_rep.upper() if nombre_rep else None
+    elif opcion == "6":
         campos["password"] = input("Nuevo password AFIP: ").strip()
         password_atp = input("Nuevo password ATP (Enter para dejar vacío): ").strip()
         campos["password_atp"] = password_atp if password_atp else None
-        campos["cuit_retenido"] = input("Nuevo CUIT Retenido: ").strip()
+        campos["cuit"] = input("Nuevo CUIT del Contribuyente: ").strip()
+        cuit_rep = input("Nuevo CUIT del Representante (Enter para eliminar): ").strip()
+        campos["cuit_representante"] = cuit_rep if cuit_rep else None
+        nombre_rep = input("Nuevo Nombre del Representante (Enter para eliminar): ").strip()
+        campos["nombre_representante"] = nombre_rep.upper() if nombre_rep else None
     else:
         print("[X] Opción inválida.")
         return

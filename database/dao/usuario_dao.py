@@ -33,13 +33,25 @@ class UsuarioDAO:
             cursor.execute("SELECT * FROM usuarios WHERE LOWER(nombre) LIKE ?", (nombre_parcial,))
             return cursor.fetchall()
 
-    def insertar(self, nombre: str, cuit: str, cuit_retenido: str, password: str, password_atp: str = None) -> None:
+    def insertar(self, nombre: str, cuit: str, password: str, password_atp: str = None,
+                 cuit_representante: str = None, nombre_representante: str = None) -> None:
+        """
+        Inserta un nuevo usuario en la base de datos.
+
+        Args:
+            nombre: Nombre del CONTRIBUYENTE (PJ o PF)
+            cuit: CUIT del CONTRIBUYENTE (quien presenta DDJJ)
+            password: Password ARCA
+            password_atp: Password ATP (opcional)
+            cuit_representante: CUIT para login en ARCA (NULL si es PF)
+            nombre_representante: Nombre del representante (NULL si es PF)
+        """
         with self._conectar() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO usuarios (nombre, cuit, cuit_retenido, password, password_atp)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (nombre, cuit, cuit_retenido, password, password_atp))
+                INSERT INTO usuarios (nombre, cuit, cuit_representante, nombre_representante, password, password_atp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (nombre, cuit, cuit_representante, nombre_representante, password, password_atp))
             conn.commit()
 
     def actualizar(self, nombre_usuario: str, campos: dict) -> None:
