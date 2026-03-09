@@ -115,9 +115,16 @@ def migrar_base_datos(db_path='database/usuarios.db'):
         conn.close()
 
 if __name__ == "__main__":
+    import sys
+
     print("=== MIGRACIÓN DE BASE DE DATOS - PERSONAS JURÍDICAS ===\n")
 
-    respuesta = input("¿Querés continuar con la migración? (S/N): ").strip().upper()
+    # Permitir confirmación automática con argumento --confirm
+    if "--confirm" in sys.argv:
+        respuesta = "S"
+    else:
+        respuesta = input("¿Querés continuar con la migración? (S/N): ").strip().upper()
+
     if respuesta != "S":
         print("[X] Migración cancelada")
         exit()
