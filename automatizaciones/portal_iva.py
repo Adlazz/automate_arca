@@ -24,78 +24,39 @@ def cambiar_representado(driver, wait, cuit_representado):
     Args:
         driver: WebDriver de Selenium
         wait: WebDriverWait instance
-        cuit_representado: CUIT de la persona jurídica a representar
+        cuit_representado: CUIT de la persona jurídica a representar (formato: 30711019509)
 
     Returns:
         bool: True si el cambio fue exitoso, False en caso contrario
     """
     try:
-        print(f"[INFO] Buscando botón para cambiar representado...")
+        print(f"[INFO] Cambiando a representado CUIT: {cuit_representado}")
 
-        # Intentar encontrar el botón/icono de cambiar representado
-        # Nota: Los selectores XPath deben ajustarse según la estructura HTML real de Portal IVA
-        # Algunas opciones comunes:
-        try:
-            # Opción 1: Botón con texto específico
-            btn_cambiar = esperar_elemento(driver, wait, By.XPATH,
-                "//button[contains(text(), 'Cambiar')] | //a[contains(text(), 'Cambiar')]",
-                "botón cambiar representado", timeout=5)
-        except:
-            # Opción 2: Icono cerca del encabezado "REPRESENTANDO A:"
-            btn_cambiar = esperar_elemento(driver, wait, By.XPATH,
-                "//div[contains(text(), 'REPRESENTANDO A:')]/following-sibling::*//button | //div[contains(text(), 'REPRESENTANDO A:')]/following-sibling::*//a",
-                "icono cambiar representado", timeout=5)
+        # Paso 1: Click en el icono de cambio de relación
+        # Elemento: <a title="cambio relación" href="#/changeRelation">
+        click_elemento(driver, wait, By.XPATH,
+            "//a[@title='cambio relación'][@href='#/changeRelation']",
+            "icono cambio relación")
 
-        btn_cambiar.click()
-        print("[OK] Click en botón cambiar representado")
         time.sleep(2)
 
-        # Esperar que aparezca el modal o dropdown de selección
-        # Intentar buscar campo de búsqueda o lista de CUITs
-        try:
-            # Opción 1: Campo de búsqueda/input para CUIT
-            campo_cuit = esperar_elemento(driver, wait, By.XPATH,
-                "//input[@type='text'] | //input[@placeholder]",
-                "campo CUIT representado", timeout=5)
-            campo_cuit.clear()
-            campo_cuit.send_keys(cuit_representado)
-            time.sleep(1)
+        # Paso 2: Formatear CUIT con guiones para búsqueda
+        # Convertir 30711019509 → 30-71101950-9
+        cuit_formateado = f"{cuit_representado[:2]}-{cuit_representado[2:10]}-{cuit_representado[10]}"
+        print(f"[INFO] Buscando representado con CUIT formateado: {cuit_formateado}")
 
-            # Buscar en lista de resultados
-            opcion_cuit = esperar_elemento(driver, wait, By.XPATH,
-                f"//li[contains(text(), '{cuit_representado}')] | //div[contains(text(), '{cuit_representado}')]",
-                "opción CUIT en lista")
-            opcion_cuit.click()
+        # Paso 3: Click en el elemento del representado
+        # Elemento: <a class="panel panel-default" title="Representar a...">
+        #   <h3>CONDOMINIO GIMENEZ NATALIA KARINA<small>[CUIT 30-71101950-9]</small></h3>
+        # Buscar por el CUIT en el texto del elemento
+        xpath_representado = f"//a[@class='panel panel-default'][@title='Representar a...'][.//small[contains(text(), '{cuit_formateado}')]]"
 
-        except:
-            # Opción 2: Dropdown/select directo
-            print("[INFO] Intentando seleccionar desde dropdown...")
-            seleccionar_dropdown_por_valor(driver, wait, By.XPATH,
-                "//select", cuit_representado, "representado")
+        click_elemento(driver, wait, By.XPATH, xpath_representado,
+            f"representado con CUIT {cuit_formateado}")
 
-        # Buscar botón de confirmar/aceptar
-        try:
-            btn_confirmar = esperar_elemento(driver, wait, By.XPATH,
-                "//button[contains(text(), 'Aceptar')] | //button[contains(text(), 'Confirmar')] | //button[contains(text(), 'OK')]",
-                "botón confirmar", timeout=5)
-            btn_confirmar.click()
-        except:
-            print("[INFO] No se encontró botón de confirmación (podría ser automático)")
-
-        time.sleep(3)
-
-        # Verificar que el cambio fue exitoso
-        try:
-            header = driver.find_element(By.XPATH, "//div[contains(text(), 'REPRESENTANDO A:')]").text
-            if cuit_representado in header:
-                print(f"[OK] Representado cambiado exitosamente a CUIT: {cuit_representado}")
-                return True
-            else:
-                print(f"[X] El CUIT {cuit_representado} no aparece en el header")
-                return False
-        except:
-            print("[!] No se pudo verificar el cambio de representado")
-            return True  # Asumir éxito si no hay error anterior
+        time.sleep(2)
+        print(f"[OK] Representado cambiado exitosamente a CUIT: {cuit_formateado}")
+        return True
 
     except Exception as e:
         print(f"[X] Error al cambiar representado: {str(e)}")
