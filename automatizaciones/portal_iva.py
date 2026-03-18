@@ -17,20 +17,21 @@ from src.dropdowns import click_opcion_dropdown, seleccionar_dropdown_por_valor
 from src.uploads import subir_archivos
 from src.configuracion_facturacion import seleccionar_modalidad_operacion
 
-def cambiar_representado(driver, wait, cuit_representado):
+def cambiar_representado(driver, wait, nombre_contribuyente, cuit_representado):
     """
     Cambia el representado en Portal IVA para personas jurídicas.
 
     Args:
         driver: WebDriver de Selenium
         wait: WebDriverWait instance
+        nombre_contribuyente: Nombre del contribuyente (PJ) a representar
         cuit_representado: CUIT de la persona jurídica a representar (formato: 30711019509)
 
     Returns:
         bool: True si el cambio fue exitoso, False en caso contrario
     """
     try:
-        print(f"[INFO] Cambiando a representado CUIT: {cuit_representado}")
+        print(f"[INFO] Cambiando a representado: {nombre_contribuyente}", flush=True)
 
         # Paso 1: Click en el icono de cambio de relación
         # Elemento: <a title="cambio relación" href="#/changeRelation">
@@ -38,25 +39,92 @@ def cambiar_representado(driver, wait, cuit_representado):
             "//a[@title='cambio relación'][@href='#/changeRelation']",
             "icono cambio relación")
 
-        time.sleep(2)
+        time.sleep(3)
 
-        # Paso 2: Formatear CUIT con guiones para búsqueda
-        # Convertir 30711019509 → 30-71101950-9
+        # Guardar screenshot y HTML para debug
+        driver.save_screenshot("debug_cambio_relacion.png")
+        with open("debug_page_source.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        print("[DEBUG] Screenshot y HTML guardados", flush=True)
+
+        # Paso 2: Click en el elemento del representado
+        # Intentar múltiples estrategias de búsqueda
+
+        # Formatear CUIT con guiones
         cuit_formateado = f"{cuit_representado[:2]}-{cuit_representado[2:10]}-{cuit_representado[10]}"
-        print(f"[INFO] Buscando representado con CUIT formateado: {cuit_formateado}")
+        print(f"[INFO] Buscando representado: {nombre_contribuyente} (CUIT: {cuit_formateado})", flush=True)
 
-        # Paso 3: Click en el elemento del representado
-        # Elemento: <a class="panel panel-default" title="Representar a...">
-        #   <h3>CONDOMINIO GIMENEZ NATALIA KARINA<small>[CUIT 30-71101950-9]</small></h3>
-        # Buscar por el CUIT en el texto del elemento
-        xpath_representado = f"//a[@class='panel panel-default'][@title='Representar a...'][.//small[contains(text(), '{cuit_formateado}')]]"
+        # Estrategia 1: Buscar por nombre en h3
+        try:
+            print("[DEBUG] Intentando estrategia 1: nombre en h3", flush=True)
+            xpath_1 = f"//a[@class='panel panel-default'][@title='Representar a...']//h3[contains(text(), '{nombre_contribuyente}')]"
+            elemento = driver.find_element(By.XPATH, xpath_1)
+            elemento.click()
+            print(f"[OK] Click exitoso usando nombre en h3", flush=True)
+            time.sleep(2)
+            return True
+        except Exception as e1:
+            print(f"[INFO] Estrategia 1 falló: {str(e1)}", flush=True)
 
-        click_elemento(driver, wait, By.XPATH, xpath_representado,
-            f"representado con CUIT {cuit_formateado}")
+        # Estrategia 2: Buscar por CUIT formateado en small
+        try:
+            xpath_2 = f"//a[@class='panel panel-default'][@title='Representar a...']//small[contains(text(), 'CUIT {cuit_formateado}')]"
+            elemento = driver.find_element(By.XPATH, xpath_2)
+            # Click en el elemento padre (el <a>)
+            elemento.find_element(By.XPATH, "./ancestor::a[@class='panel panel-default']").click()
+            print(f"[OK] Click exitoso usando CUIT en small")
+            time.sleep(2)
+            return True
+        except Exception as e2:
+            print(f"[INFO] Estrategia 2 falló: {str(e2)}")
 
-        time.sleep(2)
-        print(f"[OK] Representado cambiado exitosamente a CUIT: {cuit_formateado}")
-        return True
+        # Estrategia 3: Buscar el div.media que contiene el nombre
+        try:
+            xpath_3 = f"//div[@class='media']//h3[contains(text(), '{nombre_contribuyente}')]"
+            elemento = driver.find_element(By.XPATH, xpath_3)
+            # Click en el elemento padre <a>
+            elemento.find_element(By.XPATH, "./ancestor::a[@class='panel panel-default']").click()
+            print(f"[OK] Click exitoso usando div.media")
+            time.sleep(2)
+            return True
+        except Exception as e3:
+            print(f"[INFO] Estrategia 3 falló: {str(e3)}")
+
+        # Estrategia 4: Buscar cualquier h3 que contenga parte del nombre
+        try:
+            # Usar las primeras palabras del nombre
+            palabras = nombre_contribuyente.split()[:3]  # Primeras 3 palabras
+            nombre_parcial = " ".join(palabras)
+            xpath_4 = f"//h3[contains(text(), '{nombre_parcial}')]"
+            elemento = driver.find_element(By.XPATH, xpath_4)
+            # Click en el elemento padre <a>
+            elemento.find_element(By.XPATH, "./ancestor::a[@class='panel panel-default']").click()
+            print(f"[OK] Click exitoso usando nombre parcial")
+            time.sleep(2)
+            return True
+        except Exception as e4:
+            print(f"[INFO] Estrategia 4 falló: {str(e4)}")
+
+        # Estrategia 5: Click directo en cualquier panel con title="Representar a..."
+        try:
+            xpath_5 = "//a[@class='panel panel-default'][@title='Representar a...']"
+            elementos = driver.find_elements(By.XPATH, xpath_5)
+            print(f"[INFO] Encontrados {len(elementos)} elementos 'Representar a...'")
+
+            # Buscar el que contenga el nombre o CUIT
+            for idx, elem in enumerate(elementos):
+                texto = elem.text.upper()
+                print(f"[INFO] Elemento {idx+1}: {texto[:100]}...")
+                if nombre_contribuyente.upper() in texto or cuit_formateado in texto:
+                    elem.click()
+                    print(f"[OK] Click exitoso en elemento {idx+1}")
+                    time.sleep(2)
+                    return True
+        except Exception as e5:
+            print(f"[INFO] Estrategia 5 falló: {str(e5)}")
+
+        print("[X] Todas las estrategias fallaron")
+        return False
 
     except Exception as e:
         print(f"[X] Error al cambiar representado: {str(e)}")
@@ -111,19 +179,19 @@ def login_afip(cuit, password, periodo_fiscal, tipo_operacion, nombre_usuario, c
         driver.switch_to.window(handles[-1])
         print("Cambiado a la nueva pestaña")
 
+        # 🆕 NUEVA LÓGICA: Cambiar representado si es Persona Jurídica
+        # IMPORTANTE: Esto debe hacerse ANTES de hacer click en "Ingresar"
+        if cuit_representado:
+            print(f"[INFO] Persona Jurídica detectada. Cambiando a representado: {nombre_usuario}", flush=True)
+            cambiar_representado(driver, wait, nombre_usuario, cuit_representado)
+        else:
+            print(f"[INFO] Persona Física. Usando CUIT por defecto: {cuit}", flush=True)
+
         click_elemento(driver, wait, By.XPATH, "//button[span[text()='Ingresar']]", "botón Ingresar")
         periodo_valor = periodo_fiscal[3:] + periodo_fiscal[:2]
         seleccionar_dropdown_por_valor(driver, wait, By.ID, "periodo", periodo_valor, "período fiscal")
 
         click_elemento(driver, wait, By.XPATH, "//button[span[text()='Continuar']]", "botón Continuar")
-
-        # 🆕 NUEVA LÓGICA: Cambiar representado si es Persona Jurídica
-        if cuit_representado:
-            print(f"[INFO] Persona Jurídica detectada. Cambiando a representado CUIT: {cuit_representado}")
-            cambiar_representado(driver, wait, cuit_representado)
-        else:
-            print(f"[INFO] Persona Física. Usando CUIT por defecto: {cuit}")
-
         click_elemento(driver, wait, By.XPATH, "//button[span[text()='Ingresar']]", "botón Ingresar (2)")
 
         esperar_elemento(driver, wait, By.ID, "seccionConMovimientos", "sección checkboxes")
